@@ -1,0 +1,4 @@
+# purge-kernels does not work with read-only root filesystem
+disable purge-kernels.service
+# man cannot create cache in %post, do it at boot time
+enable man-db-create.service
