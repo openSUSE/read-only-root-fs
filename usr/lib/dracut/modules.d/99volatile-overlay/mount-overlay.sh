@@ -5,7 +5,6 @@ type det_fs >/dev/null 2>&1 || . /lib/fs-lib.sh
 
 overlaydir="${NEWROOT}/tmp"
 
-mkdir -p "${overlaydir}"
 mount -t tmpfs tmpfs "${overlaydir}"
 mkdir "${overlaydir}"/{etc,work-etc,var,work-var}
 
