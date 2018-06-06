@@ -2,3 +2,5 @@
 disable purge-kernels.service
 # man cannot create cache in %post, do it at boot time
 enable man-db-create.service
+# create missing directories in /srv and /var on next boot
+enable create-dirs-from-rpmdb.service
