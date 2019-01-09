@@ -1,0 +1,37 @@
+#!/bin/bash
+#
+# Copyright (c) 2018 SUSE Linux GmbH, Nuernberg, Germany
+#
+# Adjust /etc/fstab so that the overlay filesystems can be mounted in the initrd.
+#
+
+# Workaround for bsc#1121276 is to prefix paths in /etc/fstab options with /sysroot,
+# which also means duplicating the x-systemd.requires-mounts-for entry for /etc.
+
+# Migration of /etc needed?
+if [ -e /etc/fstab.sys ] && grep -qE "^overlay /etc" /etc/fstab.sys; then
+	# Remove /var from fstab.sys
+	sed -i"" -E '/^[^[[:space:]]*[[:space:]]+\/var[[:space:]]/d' /etc/fstab.sys
+	# Move /etc mount to /etc/fstab
+	# sed '/^overlay \/etc/s/\/sysroot//g;t;d' /etc/fstab.sys >> /etc/fstab
+	# Workaround for bsc#NUMBER
+	grep -E '^overlay /etc' /etc/fstab.sys >> /etc/fstab
+	sed -i"" '/^overlay \/etc/d' /etc/fstab.sys
+fi
+
+[ -e /etc/fstab ] || exit 0
+
+if ! grep -qE "^overlay /etc" /etc/fstab; then
+	# Add entry for /etc
+	cat << EOF >> /etc/fstab
+overlay /etc overlay defaults,lowerdir=/sysroot/etc,upperdir=/sysroot/var/lib/overlay/etc,workdir=/sysroot/var/lib/overlay/work-etc,x-systemd.requires-mounts-for=/var,x-systemd.requires-mounts-for=/sysroot/var,x-initrd.mount 0 0
+EOF
+elif ! grep -qE '^overlay /etc .*x-systemd.requires-mounts-for=/sysroot/var,x-initrd.mount' /etc/fstab; then
+	# Add necessary parameters
+	sed -i 's#^overlay /etc \(.*\) 0 0$#overlay /etc \1,x-systemd.requires-mounts-for=/var,x-systemd.requires-mounts-for=/sysroot/var,x-initrd.mount 0 0#' /etc/fstab
+
+	# Workaround for bsc#1121279
+	sed -i"" -E 's/^([^[[:space:]]*[[:space:]]+\/var[[:space:]]+[^[[:space:]]*[[:space:]]+[^[[:space:]]*)([[:space:]]+.*)$/\1,x-initrd.mount\2/' /etc/fstab
+fi
+
+exit 0
