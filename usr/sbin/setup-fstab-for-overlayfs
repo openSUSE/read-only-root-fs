@@ -1,37 +1,31 @@
 #!/bin/bash
 #
-# Copyright (c) 2018 SUSE Linux GmbH, Nuernberg, Germany
+# Copyright (c) 2019 SUSE Linux GmbH, Nuernberg, Germany
 #
-# Adjust /etc/fstab so that the overlay filesystems can be mounted in the initrd.
+# Add mountpoint for the /etc overlay and workaround for /var to /etc/fstab
 #
 
-# Workaround for bsc#1121276 is to prefix paths in /etc/fstab options with /sysroot,
-# which also means duplicating the x-systemd.requires-mounts-for entry for /etc.
-
-# Migration of /etc needed?
-if [ -e /etc/fstab.sys ] && grep -qE "^overlay /etc" /etc/fstab.sys; then
-	# Move /etc mount to /etc/fstab
-	# sed '/^overlay \/etc/s/\/sysroot//g;t;d' /etc/fstab.sys >> /etc/fstab
-	# Workaround for bsc#1121276
-	awk '$2 == "/etc"' /etc/fstab.sys >> /etc/fstab
-	# Remote /etc and /var from fstab.sys
-	gawk -i inplace '$2 != "/etc" && $2 != "/var"' /etc/fstab.sys
+# Already there?
+if [ -e /etc/fstab ] && grep -qE "overlay /etc" /etc/fstab; then
+	exit 0 # Do nothing
 fi
 
-if ! grep -qE "^overlay /etc" /etc/fstab; then
-	# Add entry for /etc
-	cat << EOF >> /etc/fstab
+# Not a fresh installation?
+if [ -e /etc/fstab.sys ]; then
+	# Let transactional-update handle the migration - doing anything here would be pointless
+	# as it's only written into the overlay anyway and if for some reason transactional-update
+	# is too old, it would result in duplicate /etc entries.
+	exit 0
+fi
+
+# Add entry for /etc
+# Workaround for bsc#1121276 is to prefix paths in /etc/fstab options with /sysroot,
+# which also means duplicating the x-systemd.requires-mounts-for entry for /etc.
+cat << EOF >> /etc/fstab
 overlay /etc overlay defaults,lowerdir=/sysroot/etc,upperdir=/sysroot/var/lib/overlay/1/etc,workdir=/sysroot/var/lib/overlay/work-etc,x-systemd.requires-mounts-for=/var,x-systemd.requires-mounts-for=/sysroot/var,x-initrd.mount 0 0
 EOF
 
-	# Workaround for bsc#1121279
-	gawk -i inplace '$2 == "/var" { $4 = $4",x-initrd.mount" } { print $0 }' /etc/fstab
-elif ! grep -qE '^overlay /etc .*x-systemd.requires-mounts-for=/sysroot/var,x-initrd.mount' /etc/fstab; then
-	# Add necessary parameters to /etc
-	gawk -i inplace '$2 == "/etc" { $4 = $4",x-systemd.requires-mounts-for=/var,x-systemd.requires-mounts-for=/sysroot/var,x-initrd.mount" } { print $0 }' /etc/fstab
-
-	# Workaround for bsc#1121279
-	gawk -i inplace '$2 == "/var" { $4 = $4",x-initrd.mount" } { print $0 }' /etc/fstab
-fi
+# Workaround for bsc#1121279
+gawk -i inplace '$2 == "/var" { $4 = $4",x-initrd.mount" } { print $0 }' /etc/fstab
 
 exit 0
