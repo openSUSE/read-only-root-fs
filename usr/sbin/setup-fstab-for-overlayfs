@@ -1,0 +1,31 @@
+#!/bin/sh
+#
+# Copyright (c) 2019 SUSE Linux GmbH, Nuernberg, Germany
+#
+# Add mountpoint for the /etc overlay and workaround for /var to /etc/fstab
+#
+
+# Already there?
+if [ -e /etc/fstab ] && grep -qE "overlay /etc" /etc/fstab; then
+	exit 0 # Do nothing
+fi
+
+# Not a fresh installation?
+if [ -e /etc/fstab.sys ]; then
+	# Let transactional-update handle the migration - doing anything here would be pointless
+	# as it's only written into the overlay anyway and if for some reason transactional-update
+	# is too old, it would result in duplicate /etc entries.
+	exit 0
+fi
+
+# Add entry for /etc
+# Workaround for bsc#1121276 is to prefix paths in /etc/fstab options with /sysroot,
+# which also means duplicating the x-systemd.requires-mounts-for entry for /etc.
+cat << EOF >> /etc/fstab
+overlay /etc overlay defaults,lowerdir=/sysroot/etc,upperdir=/sysroot/var/lib/overlay/1/etc,workdir=/sysroot/var/lib/overlay/work-etc,x-systemd.requires-mounts-for=/var,x-systemd.requires-mounts-for=/sysroot/var,x-initrd.mount 0 0
+EOF
+
+# Workaround for bsc#1121279
+gawk -i inplace '$2 == "/var" { $4 = $4",x-initrd.mount" } { print $0 }' /etc/fstab
+
+exit 0
