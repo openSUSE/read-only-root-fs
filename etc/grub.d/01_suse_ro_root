@@ -1,15 +1,20 @@
 #!/bin/sh
-exec tail -n +3 $0
+boot_rw_subvol="/boot/writable"
+
+. "$pkgdatadir/grub-mkconfig_lib"
+
+cat << EOF
 # On read-only root file systems /boot/writable provides a writeable
 # subvolume, e.g. to store the GRUB environment block.
-set boot_rw_subvol="/boot/writable"
-btrfs-mount-subvol "(${root})" "${boot_rw_subvol}" "/@${boot_rw_subvol}"
+set boot_rw_subvol=${boot_rw_subvol}
+btrfs-mount-subvol "(\${root})" "\${boot_rw_subvol}" "$(${grub_mkrelpath} ${boot_rw_subvol})"
 
-# Use above location to load and store GRUB environment variables
-if [ -f ${boot_rw_subvol}/grubenv ]; then
-  load_env -f ${boot_rw_subvol}/grubenv
+# Use above location to load GRUB environment variables
+if [ -f \${boot_rw_subvol}/grubenv ]; then
+  load_env -f \${boot_rw_subvol}/grubenv
 fi
 # btrfs header always beats config file
-if [ "${env_block}" ] ; then
-  load_env -f "${env_block}"
+if [ "\${env_block}" ] ; then
+  load_env -f "\${env_block}"
 fi
+EOF
