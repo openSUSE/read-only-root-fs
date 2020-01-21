@@ -1,4 +1,0 @@
-#!/bin/sh
-
-echo "set config_directory=\"\${config_directory_orig}\""
-echo "unset config_directory_orig"
