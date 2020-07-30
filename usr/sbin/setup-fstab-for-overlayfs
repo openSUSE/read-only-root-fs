@@ -6,7 +6,7 @@
 #
 
 # Already there?
-if [ -e /etc/fstab ] && grep -qE "overlay /etc" /etc/fstab; then
+if [ -e /etc/fstab ] && grep -qE '^overlay[[:space:]]+/etc[[:space:]]' /etc/fstab; then
 	exit 0 # Do nothing
 fi
 
@@ -27,6 +27,8 @@ EOF
 
 # Workaround for bsc#1121279
 gawk -i inplace '$2 == "/var" { $4 = $4",x-initrd.mount" } { print $0 }' /etc/fstab
+
+# Make the /root subvolume available during ignition runs (boo#1161264)
 gawk -i inplace '$2 == "/root" { $4 = $4",x-initrd.mount" } { print $0 }' /etc/fstab
 
 exit 0
