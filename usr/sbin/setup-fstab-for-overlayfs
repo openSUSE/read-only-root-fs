@@ -6,7 +6,7 @@
 #
 
 # Already there?
-if [ -e /etc/fstab ] && grep -qE "overlay /etc" /etc/fstab; then
+if [ -e /etc/fstab ] && grep -qE '^overlay[[:space:]]+/etc[[:space:]]' /etc/fstab; then
 	exit 0 # Do nothing
 fi
 
