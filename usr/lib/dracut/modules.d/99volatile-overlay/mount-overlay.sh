@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 type getarg >/dev/null 2>&1 || . /lib/dracut-lib.sh
 type det_fs >/dev/null 2>&1 || . /lib/fs-lib.sh
