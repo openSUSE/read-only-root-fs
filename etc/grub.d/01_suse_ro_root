@@ -7,7 +7,9 @@ cat << EOF
 # On read-only root file systems /boot/writable provides a writeable
 # subvolume, e.g. to store the GRUB environment block.
 set boot_rw_subvol=${boot_rw_subvol}
-btrfs-mount-subvol "(\${root})" "\${boot_rw_subvol}" "$(${grub_mkrelpath} ${boot_rw_subvol})"
+if [ "\${root}" != "host" ]; then
+  btrfs-mount-subvol "(\${root})" "\${boot_rw_subvol}" "$(${grub_mkrelpath} ${boot_rw_subvol})"
+fi
 
 # Use above location to load GRUB environment variables
 if [ -f \${boot_rw_subvol}/grubenv ]; then
