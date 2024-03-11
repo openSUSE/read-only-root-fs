@@ -1,0 +1,8 @@
+#!/bin/sh
+set -eu
+[ -e /run/nextroot/etc/fstab ] || exit 0
+# Perform all mounts marked with x-initrd.mount inside /run/nextroot
+awk '$1 !~ /^#/ && $4 ~ /(\<|,)x-initrd\.mount(\>|,)/ {
+	gsub(/sysroot\//,"run/nextroot/", $4); # The /etc overlay mount hardcodes /sysroot paths in options
+	if(system("findmnt /run/nextroot" $2 " >/dev/null || mount --target-prefix /run/nextroot --fstab /run/nextroot/etc/fstab --options-mode ignore -o \x27" $4 "\x27 " $2) != 0) exit 1;
+	}' /run/nextroot/etc/fstab

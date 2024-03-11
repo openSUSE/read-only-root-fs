@@ -4,3 +4,5 @@ disable purge-kernels.service
 enable man-db-create.service
 # create missing directories in /srv and /var on next boot
 enable create-dirs-from-rpmdb.service
+# make the overlay and more available during soft-boot into /run/nextroot
+enable handle-nextroot-initrd-mounts.service
