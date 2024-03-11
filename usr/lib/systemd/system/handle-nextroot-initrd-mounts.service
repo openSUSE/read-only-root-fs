@@ -1,0 +1,13 @@
+[Unit]
+Description=Handle x-initrd.mount mounts in /run/nextroot/etc/fstab
+DefaultDependencies=no
+Before=systemd-soft-reboot.service
+ConditionPathExists=/run/nextroot/etc/fstab
+
+[Service]
+ExecStart=/usr/sbin/handle-nextroot-initrd-mounts
+Type=oneshot
+RemainAfterExit=yes
+
+[Install]
+RequiredBy=soft-reboot.target
