@@ -1,0 +1,28 @@
+#!/bin/sh -e
+#
+# Copyright (c) 2019-2025 SUSE Linux GmbH, Nuernberg, Germany
+#
+# Create nested /etc subvolume and add it to fstab.
+
+# Already there?
+if [ -e /etc/fstab ] && [ -n "$(awk '$2 == "/etc"' /etc/fstab)" ]; then
+	echo "ERROR: Conflicting /etc entry found - cannot create nested subvolume."
+	exit 1
+fi
+
+echo "Creating nested /etc subvolume..."
+mv /etc /etc.transactional-update
+btrfs subvolume create /etc
+rsync --quiet --archive --xattrs --acls /etc.transactional-update/ /etc
+rm -r /etc.transactional-update
+
+# Add entry for /etc
+echo "/etc /etc none bind,x-initrd.mount 0 0" >> /etc/fstab
+
+# Still expected by components such as Combustion
+gawk -i inplace '$2 == "/var" { $4 = $4",x-initrd.mount" } { print $0 }' /etc/fstab
+
+# Make the /root subvolume available during ignition runs (boo#1161264)
+gawk -i inplace '$2 == "/root" { $4 = $4",x-initrd.mount" } { print $0 }' /etc/fstab
+
+exit 0
