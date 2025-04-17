@@ -7,6 +7,6 @@ check() {
 install() {
     inst_multiple mountpoint
 
-    mkdir -p "${initdir}/$systemdsystemunitdir/initrd-parse-etc.service.d"
-    inst_simple "$moddir/writable-etc.conf" "$systemdsystemunitdir/initrd-parse-etc.service.d/writable-etc.conf"
+    inst_simple "$moddir/writable-etc.service" "$systemdsystemunitdir/writable-etc.service"
+    $SYSTEMCTL -q --root "$initdir" enable writable-etc.service
 }

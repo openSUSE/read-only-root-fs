@@ -1,0 +1,31 @@
+[Unit]
+Description=Remount /etc read-write
+DefaultDependencies=false
+
+Before=initrd-fs.target
+
+# Make sure /sysroot/etc is fully mounted
+After=initrd-parse-etc.service
+# Would be nice, but initrd-cleanup.service calls systemctl isolate initrd-switch-root.target
+# which pulls in this unit and with this requires then also initrd-parse-etc.service.
+# That has Type=oneshot without RemainAfterExit, so gets started again, triggering a daemon-reload
+# a second time, breaking everything.
+# Requires=initrd-parse-etc.service
+RequiresMountsFor=/sysroot/etc
+
+Conflicts=initrd-switch-root.target umount.target
+Conflicts=dracut-emergency.service emergency.service emergency.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+# /etc is a subvolume of the read-only root file system, so also mounted
+# read-only. Mounting it read-write requires a two step process:
+# - Bind mount the subvolume to get a dedicated mount point
+# - Remount that bind mount as read-write
+# Unfortunately systemd does not support two lines for one mount point,
+# so the remount part is done manually here.
+ExecStart=/bin/sh -e -c 'if mountpoint -q /sysroot/etc; then mount -o remount,rw /sysroot/etc; fi'
+
+[Install]
+RequiredBy=initrd-fs.target
