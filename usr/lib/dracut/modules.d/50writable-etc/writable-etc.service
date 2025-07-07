@@ -25,7 +25,7 @@ RemainAfterExit=yes
 # - Remount that bind mount as read-write
 # Unfortunately systemd does not support two lines for one mount point,
 # so the remount part is done manually here.
-ExecStart=/bin/sh -e -c 'if mountpoint -q /sysroot/etc; then mount -o remount,rw /sysroot/etc; fi'
+ExecStart=/bin/sh -e -c 'if findmnt -O ro -M /sysroot/etc >/dev/null; then mount -o remount,rw /sysroot/etc; fi'
 
 [Install]
 RequiredBy=initrd-fs.target
