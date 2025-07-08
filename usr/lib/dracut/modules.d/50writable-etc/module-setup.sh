@@ -5,8 +5,6 @@ check() {
 }
 
 install() {
-    inst_multiple mountpoint
-
     inst_simple "$moddir/writable-etc.service" "$systemdsystemunitdir/writable-etc.service"
     $SYSTEMCTL -q --root "$initdir" enable writable-etc.service
 }
