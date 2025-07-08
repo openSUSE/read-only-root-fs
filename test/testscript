@@ -1,0 +1,41 @@
+#!/bin/bash
+set -euxo pipefail
+exec &>/dev/ttyS0
+# Poweroff immediately on any failure to avoid unnecessary waiting.
+trap '[ $? -eq 0 ] || SYSTEMD_IGNORE_CHROOT=1 poweroff -f' EXIT
+
+# Remove old read-only-root-fs
+rpm -e --nodeps --noscripts --nodb read-only-root-fs
+
+# Install the new read-only-root-fs
+mount -t 9p -o trans=virtio tmpdir /mnt
+chown -R root:root /mnt/install/
+cp -av /mnt/install/* /
+umount /mnt
+
+# Make sure that the system comes up good, leave a marker in the shared FS
+# and power off the VM.
+cat >>/usr/bin/combustion-validate <<'EOF'
+#!/bin/bash
+set -euxo pipefail
+trap '[ $? -eq 0 ] || poweroff -f' EXIT
+mount -t 9p -o trans=virtio tmpdir /mnt
+touch /mnt/done
+umount /mnt
+poweroff -f
+EOF
+chmod a+x /usr/bin/combustion-validate
+
+cat >>/etc/systemd/system/combustion-validate.service <<'EOF'
+[Unit]
+DefaultDependencies=no
+Requires=boot-complete.target
+After=boot-complete.target
+[Service]
+Type=oneshot
+StandardOutput=journal+console
+ExecStart=/usr/bin/combustion-validate
+[Install]
+RequiredBy=default.target
+EOF
+systemctl enable combustion-validate.service
