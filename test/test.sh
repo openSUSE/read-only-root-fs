@@ -63,7 +63,7 @@ trap '[ $? -eq 0 ] || SYSTEMD_IGNORE_CHROOT=1 poweroff -f' EXIT
 mount -t 9p -o trans=virtio tmpdir /mnt
 cp -av /mnt/install/* /
 cp /usr/lib/modules/$(uname -r)/vmlinuz /mnt/vmlinuz
-dracut -f --no-hostonly /mnt/initrd
+dracut -f --no-hostonly --omit "volatile-overlay" /mnt/initrd
 touch /mnt/done
 umount /mnt
 SYSTEMD_IGNORE_CHROOT=1 poweroff -f
