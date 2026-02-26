@@ -1,4 +1,4 @@
-#!/bin/sh -e
+#!/bin/bash -e
 #
 # Copyright (c) 2019-2025 SUSE Linux GmbH, Nuernberg, Germany
 #
@@ -9,6 +9,22 @@ if [ -e /etc/fstab ] && [ -n "$(awk '$2 == "/etc"' /etc/fstab)" ]; then
 	echo "ERROR: Conflicting /etc entry found - cannot create nested subvolume."
 	exit 1
 fi
+
+generate_ld_library_path () {
+	while read -r line; do
+		if [[ $line = "# "* ]]; then
+			:
+		elif [[ $line = "include "* ]]; then
+			generate_ld_library_path < ${line##include }
+		else
+			LD_LIBRARY_PATH="${LD_LIBRARY_PATH}${LD_LIBRARY_PATH:+:}${line}"
+		fi
+	done
+}
+
+# Make sure applications continue to work even without /etc/ld.so.cache
+generate_ld_library_path < /etc/ld.so.conf
+export LD_LIBRARY_PATH
 
 echo "Creating nested /etc subvolume..."
 mv /etc /etc.transactional-update
