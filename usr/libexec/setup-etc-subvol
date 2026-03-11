@@ -15,7 +15,12 @@ generate_ld_library_path () {
 		if [[ $line = "# "* ]]; then
 			:
 		elif [[ $line = "include "* ]]; then
-			generate_ld_library_path < ${line##include }
+			# glob expansion is intentional here
+			for file in ${line##include }; do
+				if [ -e "$file" ]; then
+					generate_ld_library_path < "${file}"
+				fi
+			done
 		else
 			LD_LIBRARY_PATH="${LD_LIBRARY_PATH}${LD_LIBRARY_PATH:+:}${line}"
 		fi
@@ -23,8 +28,10 @@ generate_ld_library_path () {
 }
 
 # Make sure applications continue to work even without /etc/ld.so.cache
-generate_ld_library_path < /etc/ld.so.conf
-export LD_LIBRARY_PATH
+if [ -e /etc/ld.so.conf ]; then
+	generate_ld_library_path < /etc/ld.so.conf
+	export LD_LIBRARY_PATH
+fi
 
 echo "Creating nested /etc subvolume..."
 mv /etc /etc.transactional-update
